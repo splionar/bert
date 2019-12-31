@@ -131,6 +131,7 @@ class BertModel(object):
   def __init__(self,
                config,
                is_training,
+               image_input,
                input_ids,
                input_mask=None,
                token_type_ids=None,
@@ -194,6 +195,12 @@ class BertModel(object):
             dropout_prob=config.hidden_dropout_prob)
 
       with tf.variable_scope("encoder"):
+      	image_tensor = tf.layers.dense(image_input, 
+							      		config.hidden_size, 
+							      		activation=tf.nn.relu,
+							      		kernel_initializer=create_initializer(config.initializer_range))
+
+      with tf.variable_scope("decoder"):
         # This converts a 2D mask of shape [batch_size, seq_length] to a 3D
         # mask of shape [batch_size, seq_length, seq_length] which is used
         # for the attention scores.
@@ -202,8 +209,9 @@ class BertModel(object):
 
         # Run the stacked transformer.
         # `sequence_output` shape = [batch_size, seq_length, hidden_size].
-        self.all_encoder_layers = transformer_model(
+        self.all_decoder_layers = transformer_model(
             input_tensor=self.embedding_output,
+            image_input_tensor=image_tensor,
             attention_mask=attention_mask,
             hidden_size=config.hidden_size,
             num_hidden_layers=config.num_hidden_layers,
@@ -215,7 +223,7 @@ class BertModel(object):
             initializer_range=config.initializer_range,
             do_return_all_layers=True)
 
-      self.sequence_output = self.all_encoder_layers[-1]
+      self.sequence_output = self.all_decoder_layers[-1]
       # The "pooler" converts the encoded sequence tensor of shape
       # [batch_size, seq_length, hidden_size] to a tensor of shape
       # [batch_size, hidden_size]. This is necessary for segment-level
@@ -244,7 +252,7 @@ class BertModel(object):
     return self.sequence_output
 
   def get_all_encoder_layers(self):
-    return self.all_encoder_layers
+    return self.all_decoder_layers
 
   def get_embedding_output(self):
     """Gets output of the embedding lookup (i.e., input to the transformer).
@@ -752,11 +760,12 @@ def attention_layer(from_tensor,
 
 
 def transformer_model(input_tensor,
+                      image_input_tensor,
                       attention_mask=None,
                       hidden_size=768,
-                      num_hidden_layers=12,
-                      num_attention_heads=12,
-                      intermediate_size=3072,
+                      num_hidden_layers=12, #12
+                      num_attention_heads=12, #12
+                      intermediate_size=3072, #3072
                       intermediate_act_fn=gelu,
                       hidden_dropout_prob=0.1,
                       attention_probs_dropout_prob=0.1,
@@ -821,6 +830,7 @@ def transformer_model(input_tensor,
   # the GPU/CPU but may not be free on the TPU, so we want to minimize them to
   # help the optimizer.
   prev_output = reshape_to_matrix(input_tensor)
+  image_input = reshape_to_matrix(image_input_tensor)
 
   all_layer_outputs = []
   for layer_idx in range(num_hidden_layers):
@@ -861,11 +871,44 @@ def transformer_model(input_tensor,
               kernel_initializer=create_initializer(initializer_range))
           attention_output = dropout(attention_output, hidden_dropout_prob)
           attention_output = layer_norm(attention_output + layer_input)
+      # Image to text attention layer
+      with tf.variable_scope("image-text"):
+        it_attention_heads = []
+        it_attention_head = attention_layer(
+	          from_tensor=attention_output,
+	          to_tensor=image_input,
+	          attention_mask=None,
+	          num_attention_heads=num_attention_heads, #num_attention_heads
+	          size_per_head=attention_head_size, #attention_head_size
+	          attention_probs_dropout_prob=attention_probs_dropout_prob,
+	          initializer_range=initializer_range,
+	          do_return_2d_tensor=True,
+	          batch_size=batch_size,
+	          from_seq_length=seq_length, #seq_length
+	          to_seq_length=64)
+        it_attention_heads.append(it_attention_head)
+
+        it_attention_output = None
+        if len(it_attention_heads) == 1:
+          it_attention_output = it_attention_heads[0]
+        else:
+          it_attention_output = tf.concat(it_attention_heads, axis=-1)
+
+        # Run a linear projection of `hidden_size` then add a residual
+        # with `attention_output`.
+        with tf.variable_scope("output"):
+          it_attention_output = tf.layers.dense(
+              it_attention_output,
+              hidden_size,
+              kernel_initializer=create_initializer(initializer_range))
+          it_attention_output = dropout(it_attention_output, hidden_dropout_prob)
+          it_attention_output = layer_norm(it_attention_output + attention_output)
+
 
       # The activation is only applied to the "intermediate" hidden layer.
       with tf.variable_scope("intermediate"):
         intermediate_output = tf.layers.dense(
-            attention_output,
+            it_attention_output,
             intermediate_size,
             activation=intermediate_act_fn,
             kernel_initializer=create_initializer(initializer_range))
@@ -877,7 +920,7 @@ def transformer_model(input_tensor,
             hidden_size,
             kernel_initializer=create_initializer(initializer_range))
         layer_output = dropout(layer_output, hidden_dropout_prob)
-        layer_output = layer_norm(layer_output + attention_output)
+        layer_output = layer_norm(layer_output + it_attention_output)
         prev_output = layer_output
         all_layer_outputs.append(layer_output)
 
