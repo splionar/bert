@@ -39,6 +39,11 @@ flags.DEFINE_string(
     "for the task.")
 
 flags.DEFINE_string(
+    "image_dir", None,
+    "The input image dir. Should contain VCR image subfolders "
+    "for the task.")
+
+flags.DEFINE_string(
     "bert_config_file", None,
     "The config json file corresponding to the pre-trained BERT model. "
     "This specifies the model architecture.")
@@ -129,7 +134,7 @@ flags.DEFINE_integer(
 class InputExample(object):
   """A single training/test example for simple sequence classification."""
 
-  def __init__(self, guid, text_a, text_b=None, label=None):
+  def __init__(self, guid, text_a, text_b=None, image_path = None, label=None):
     """Constructs a InputExample.
 
     Args:
@@ -144,6 +149,7 @@ class InputExample(object):
     self.guid = guid
     self.text_a = text_a
     self.text_b = text_b
+    self.image_path = image_path
     self.label = label
 
 
@@ -328,12 +334,13 @@ class MrpcProcessor(DataProcessor):
       guid = "%s-%s" % (set_type, i)
       text_a = tokenization.convert_to_unicode(line[3])
       text_b = tokenization.convert_to_unicode(line[4])
+      image_path = str(line[1])
       if set_type == "test":
         label = "0"
       else:
         label = tokenization.convert_to_unicode(line[0])
       examples.append(
-          InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+          InputExample(guid=guid, text_a=text_a, text_b=text_b, image_path = image_path, label=label))
     return examples
 
 
@@ -467,10 +474,15 @@ def convert_single_example(ex_index, example, label_list, max_seq_length,
   #    img = tf.image.resize(img, (299, 299))
   #    img = tf.keras.applications.inception_v3.preprocess_input(img)
   #    return img
-
-  image_path = '/content/drive/My Drive/deeplearning-eth/glue/image_resized.jpg'
+  image_base_dir = str(FLAGS.image_dir)
+  if image_base_dir[-1] == '/':
+      image_base_dir = image_base_dir[:-1]
+  image_path = image_base_dir + '/'+ example.image_path
   #img = load_image(image_path)
-  img = mpimg.imread(image_path)
+  try:
+    img = mpimg.imread(image_path)
+  except FileNotFoundError:
+    img = mpimg.imread(image_base_dir+'/lsmdc_0014_Ist_das_Leben_nicht_schoen/0014_Ist_das_Leben_nicht_schoen_01.14.39.611-01.14.40.870@0.jpg')
   #img = img.flatten()/256
   image = img.tostring()
   #image = img.tolist()
@@ -567,7 +579,7 @@ def file_based_input_fn_builder(input_file, seq_length, is_training,
       if t.dtype == tf.string:
         t = tf.decode_raw(t, tf.uint8)
         t = tf.dtypes.cast(t, dtype=tf.float32)
-        t = tf.reshape(t, [64,150,3])
+        t = tf.reshape(t, [299,299,3])
         t = tf.image.resize(t, (299, 299))
         t = tf.keras.applications.inception_v3.preprocess_input(t)
 
@@ -1034,6 +1046,7 @@ def main(_):
 
 if __name__ == "__main__":
   flags.mark_flag_as_required("data_dir")
+  flags.mark_flag_as_required("image_dir")
   flags.mark_flag_as_required("task_name")
   flags.mark_flag_as_required("vocab_file")
   flags.mark_flag_as_required("bert_config_file")
