@@ -194,13 +194,13 @@ class BertModel(object):
             max_position_embeddings=config.max_position_embeddings,
             dropout_prob=config.hidden_dropout_prob)
 
-      with tf.variable_scope("encoder"):
+      with tf.variable_scope("image-encoder"):
       	image_tensor = tf.layers.dense(image_input, 
 							      		config.hidden_size, 
 							      		activation=tf.nn.relu,
 							      		kernel_initializer=create_initializer(config.initializer_range))
 
-      with tf.variable_scope("decoder"):
+      with tf.variable_scope("encoder"):
         # This converts a 2D mask of shape [batch_size, seq_length] to a 3D
         # mask of shape [batch_size, seq_length, seq_length] which is used
         # for the attention scores.
@@ -763,9 +763,9 @@ def transformer_model(input_tensor,
                       image_input_tensor,
                       attention_mask=None,
                       hidden_size=768,
-                      num_hidden_layers=12, #12
-                      num_attention_heads=12, #12
-                      intermediate_size=3072, #3072
+                      num_hidden_layers=12,
+                      num_attention_heads=12,
+                      intermediate_size=3072,
                       intermediate_act_fn=gelu,
                       hidden_dropout_prob=0.1,
                       attention_probs_dropout_prob=0.1,
@@ -878,13 +878,13 @@ def transformer_model(input_tensor,
 	          from_tensor=attention_output,
 	          to_tensor=image_input,
 	          attention_mask=None,
-	          num_attention_heads=num_attention_heads, #num_attention_heads
-	          size_per_head=attention_head_size, #attention_head_size
+	          num_attention_heads=num_attention_heads,
+	          size_per_head=attention_head_size,
 	          attention_probs_dropout_prob=attention_probs_dropout_prob,
 	          initializer_range=initializer_range,
 	          do_return_2d_tensor=True,
 	          batch_size=batch_size,
-	          from_seq_length=seq_length, #seq_length
+	          from_seq_length=seq_length,
 	          to_seq_length=64)
         it_attention_heads.append(it_attention_head)
 
