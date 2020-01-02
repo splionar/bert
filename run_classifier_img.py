@@ -579,7 +579,7 @@ def file_based_input_fn_builder(input_file, seq_length, is_training,
       if t.dtype == tf.string:
         t = tf.decode_raw(t, tf.uint8)
         t = tf.dtypes.cast(t, dtype=tf.float32)
-        t = tf.reshape(t, [64,150,3])
+        t = tf.reshape(t, [299,299,3])
         t = tf.image.resize(t, (299, 299))
         t = tf.keras.applications.inception_v3.preprocess_input(t)
 
