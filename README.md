@@ -46,9 +46,9 @@ module load python_gpu/3.7.1
 module load eth_proxy
 pip install --user h5py --upgrade
 ```
-7. Run training with the following options
+7. Run training with the following options. Adjust username accordingly.
 ```
-bsub -W 120:00 -n 20 -R "rusage[mem=4500,ngpus_excl_p=1]" -R "select[gpu_model0==GeForceGTX1080Ti]" python /cluster/scratch/username/bert/run_classifier_img.py --task_name=MRPC --do_train=true --data_dir=/cluster/scratch/username/dataset/vcr-qa-dev --vocab_file=/cluster/scratch/slionar/pretrained/uncased_L-12_H-768_A-12/vocab.txt --bert_config_file=/cluster/scratch/username/pretrained/uncased_L-12_H-768_A-12/bert_config.json --init_checkpoint=/cluster/scratch/slionar/pretrained/uncased_L-12_H-768_A-12/bert_model.ckpt --max_seq_length=80 --train_batch_size=12 --learning_rate=2e-5 --num_train_epochs=3.0 --output_dir=/cluster/scratch/username/output/qar_img --image_dir=/cluster/scratch/username/vcr1images-299x299
+bsub -W 120:00 -n 20 -R "rusage[mem=4500,ngpus_excl_p=1]" -R "select[gpu_model0==GeForceGTX1080Ti]" python /cluster/scratch/username/bert/run_classifier_img.py --task_name=MRPC --do_train=true --data_dir=/cluster/scratch/username/dataset/vcr-qa-dev --vocab_file=/cluster/scratch/username/pretrained/uncased_L-12_H-768_A-12/vocab.txt --bert_config_file=/cluster/scratch/username/pretrained/uncased_L-12_H-768_A-12/bert_config.json --init_checkpoint=/cluster/scratch/username/pretrained/uncased_L-12_H-768_A-12/bert_model.ckpt --max_seq_length=80 --train_batch_size=12 --learning_rate=2e-5 --num_train_epochs=3.0 --output_dir=/cluster/scratch/username/output/qar_img --image_dir=/cluster/scratch/username/vcr1images-299x299
 ```
 It is recommended to test with small dataset beforehand. Change `--data_dir=/cluster/scratch/username/dataset/vcr-qa-dev` to `--data_dir=/cluster/scratch/username/dataset/vcr-qa-dev-small` to do this. On the command above, requested runtime is set at 120 hours and the queue can take a long time. To set at shorter time, e.g. 30 minutes, change `W 120:00` to `W 30`. More information: https://scicomp.ethz.ch/wiki/Getting_started_with_clusters#Resource_requirements.
 
