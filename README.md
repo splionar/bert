@@ -1,5 +1,65 @@
 # BERT
 
+## Run fine-tuning in Leonhard for QA -> R task (visual common sense reasoning)
+
+1. Connect to ETH VPN (server = sslvpn.ethz.ch/student-net) with your username and password
+2. Log in to Leonhard `ssh username@login.leonhard.ethz.ch` (https://scicomp.ethz.ch/wiki/Getting_started_with_clusters#SSH)
+3. Go to scratch directory
+```
+cd /cluster/scratch/username
+```
+4. Clone BERT customized repository `git clone https://github.com/splionar/bert.git`. Changes compared to the original repository are:
+- Add run_classifier_img.py to run finetuning with image
+- Adjust class weights, 1 for label 0, and 3 for label 1. Multiple choice problem with 4 choices is treated as binary classification, hence the ratio between label 0 and 1 is 3:1.
+- modelling.py works with image
+5. Set up working environment in scratch directory. Expected working directory, with link to download, is as follows:
+
+`+` describes a directory and `-` a file
+```
++/cluster/scratch/username
+    + bert
+      +- content of https://github.com/splionar/bert.git
+    + dataset (https://drive.google.com/open?id=1rvJ5om83ybsglshtvYWGv9fGLlmf9JlP)
+      + vcr-qar-dev
+        - dev.tsv
+        - test.tsv
+        - train.tsv
+      + vcr-qar-dev-small
+        - dev.tsv
+        - test.tsv
+        - train.tsv
+    + output
+    + pretrained
+      + uncased_L-12_H-768_A-12 (https://drive.google.com/open?id=1d31xYi749381YVF0jzERa-fXunrVI7to)
+        - bert_config.json
+        - bert_model.ckpt.data-00000-of-00001
+        - bert_model.ckpt.index
+        - bert_model.ckpt.meta
+        - vocab.txt
+    - __USAGE_RULES__
+    + vcr1images-299x299 (https://drive.google.com/open?id=1JJG54AxxEUBnUS1TCnLE2alTFOppYtRa)
+      +- vcr images resized to 299x299
+```
+6. Load necessary modules and package
+```
+module load python_gpu/3.7.1
+module load eth_proxy
+pip install --user h5py --upgrade
+```
+7. Run training with the following options
+```
+bsub -W 120:00 -n 20 -R "rusage[mem=4500,ngpus_excl_p=1]" -R "select[gpu_model0==GeForceGTX1080Ti]" python /cluster/scratch/username/bert/run_classifier_img.py --task_name=MRPC --do_train=true --data_dir=/cluster/scratch/username/dataset/vcr-qa-dev --vocab_file=/cluster/scratch/slionar/pretrained/uncased_L-12_H-768_A-12/vocab.txt --bert_config_file=/cluster/scratch/username/pretrained/uncased_L-12_H-768_A-12/bert_config.json --init_checkpoint=/cluster/scratch/slionar/pretrained/uncased_L-12_H-768_A-12/bert_model.ckpt --max_seq_length=80 --train_batch_size=12 --learning_rate=2e-5 --num_train_epochs=3.0 --output_dir=/cluster/scratch/username/output/qar_img --image_dir=/cluster/scratch/username/vcr1images-299x299
+```
+It is recommended to test with small dataset beforehand. Change `--data_dir=/cluster/scratch/username/dataset/vcr-qa-dev` to `--data_dir=/cluster/scratch/username/dataset/vcr-qa-dev-small` to do this. On the command above, requested runtime is set at 120 hours and the queue can take a long time. To set at shorter time, e.g. 30 minutes, change `W 120:00` to `W 30`. More information: https://scicomp.ethz.ch/wiki/Getting_started_with_clusters#Resource_requirements.
+
+8. Other useful operations:
+- bjobs or bbjobs, to monitor job
+- bkill -u username, to kill job
+- bpeek, to	display the standard output of a given job
+
+9. TF Record and training checkpoints will be saved to `output_dir=/cluster/scratch/username/output/qar_img`
+
+## (Content of original BERT repository below)
 **\*\*\*\*\* New May 31st, 2019: Whole Word Masking Models \*\*\*\*\***
 
 This is a release of several new models which were the result of an improvement
