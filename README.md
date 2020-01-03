@@ -57,7 +57,7 @@ It is recommended to test with small dataset beforehand. Change `--data_dir=/clu
 - bkill -u username, to kill job
 - bpeek, to	display the standard output of a given job
 
-9. TF Record and training checkpoints will be saved to `output_dir=/cluster/scratch/username/output/qar_img`. For stability, change output_dir every time running a whole new training.
+9. TF Record and training checkpoints will be saved to `output_dir=/cluster/scratch/username/output/qar_img`. For stability, change `output_dir` every time running a whole new training.
 
 ## (Content of original BERT repository below)
 **\*\*\*\*\* New May 31st, 2019: Whole Word Masking Models \*\*\*\*\***
