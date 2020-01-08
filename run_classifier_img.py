@@ -710,10 +710,9 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
         bert_config, is_training, input_ids, input_mask, segment_ids, image, label_ids,
         num_labels, use_one_hot_embeddings)
 
-    tvars = tf.trainable_variables()
-    initialized_variable_names = {}
     if init_checkpoint:
-      
+      tvars = tf.trainable_variables()
+      initialized_variable_names = {}
       (assignment_map, initialized_variable_names
       ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
       if use_tpu:
@@ -733,7 +732,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
           init_string = ", *INIT_FROM_CKPT*"
         tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
                       init_string)
-
+'''
       hidden_size = output_layer.shape[-1].value
       output_weights = tf.get_variable(
               "output_weights_", [num_labels, hidden_size],
@@ -756,7 +755,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
 
       per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs * weights, axis=-1)
       loss = tf.reduce_mean(per_example_loss)  
-
+'''
     output_spec = None
     if mode == tf.estimator.ModeKeys.TRAIN:
 
