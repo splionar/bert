@@ -732,32 +732,8 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
           init_string = ", *INIT_FROM_CKPT*"
         tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
                       init_string)
-'''
-      hidden_size = output_layer.shape[-1].value
-      output_weights = tf.get_variable(
-              "output_weights_", [num_labels, hidden_size],
-              initializer=tf.truncated_normal_initializer(stddev=0.02))
 
-      output_bias = tf.get_variable(
-              "output_bias_", [num_labels], initializer=tf.zeros_initializer())
-
-      logits = tf.matmul(output_layer, output_weights, transpose_b=True)
-      logits = tf.nn.bias_add(logits, output_bias)
-      log_probs = tf.nn.log_softmax(logits, axis=-1)
-
-      # Convert labels into one-hot encoding
-      one_hot_labels = tf.one_hot(label_ids, depth=num_labels, dtype=tf.float32)
-
-      predicted_labels = tf.squeeze(tf.argmax(log_probs, axis=-1, output_type=tf.int32))
-
-      # If we're train/eval, compute loss between predicted and actual label
-      weights = tf.constant([[1.0, 3.0]])
-
-      per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs * weights, axis=-1)
-      loss = tf.reduce_mean(per_example_loss)  
-'''
     output_spec = None
-
     if mode == tf.estimator.ModeKeys.TRAIN:
 
       train_op = optimization.create_optimizer(
