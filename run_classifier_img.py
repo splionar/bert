@@ -757,6 +757,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
       loss = tf.reduce_mean(per_example_loss)  
 '''
     output_spec = None
+
     if mode == tf.estimator.ModeKeys.TRAIN:
 
       train_op = optimization.create_optimizer(
