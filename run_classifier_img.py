@@ -710,9 +710,10 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
         bert_config, is_training, input_ids, input_mask, segment_ids, image, label_ids,
         num_labels, use_one_hot_embeddings)
 
+    tvars = tf.trainable_variables()
+    initialized_variable_names = {}
     if init_checkpoint:
-      tvars = tf.trainable_variables()
-      initialized_variable_names = {}
+      
       (assignment_map, initialized_variable_names
       ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
       if use_tpu:
