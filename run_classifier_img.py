@@ -743,6 +743,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
 
       logits = tf.matmul(output_layer, output_weights, transpose_b=True)
       logits = tf.nn.bias_add(logits, output_bias)
+      probabilities = tf.nn.softmax(logits, axis=-1)
       log_probs = tf.nn.log_softmax(logits, axis=-1)
 
       # Convert labels into one-hot encoding
