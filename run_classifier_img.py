@@ -677,7 +677,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids, i
     per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs * weights, axis=-1)
     loss = tf.reduce_mean(per_example_loss)
 
-    return (loss, per_example_loss, logits, probabilities)
+    return (loss, per_example_loss, logits, probabilities, output_layer)
 
 
 def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
@@ -704,15 +704,15 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
       is_real_example = tf.ones(tf.shape(label_ids), dtype=tf.float32)
 
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
+    scaffold_fn = None
 
-    (total_loss, per_example_loss, logits, probabilities) = create_model(
+    (loss, per_example_loss, logits, probabilities) = create_model(
         bert_config, is_training, input_ids, input_mask, segment_ids, image, label_ids,
         num_labels, use_one_hot_embeddings)
 
-    tvars = tf.trainable_variables()
-    initialized_variable_names = {}
-    scaffold_fn = None
     if init_checkpoint:
+      tvars = tf.trainable_variables()
+      initialized_variable_names = {}
       (assignment_map, initialized_variable_names
       ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
       if use_tpu:
@@ -725,19 +725,42 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
       else:
         tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
 
-    tf.logging.info("**** Trainable Variables ****")
-    for var in tvars:
-      init_string = ""
-      if var.name in initialized_variable_names:
-        init_string = ", *INIT_FROM_CKPT*"
-      tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
+      tf.logging.info("**** Trainable Variables ****")
+      for var in tvars:
+        init_string = ""
+        if var.name in initialized_variable_names:
+          init_string = ", *INIT_FROM_CKPT*"
+        tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
                       init_string)
+
+      hidden_size = output_layer.shape[-1].value
+      output_weights = tf.get_variable(
+              "output_weights_", [num_labels, hidden_size],
+              initializer=tf.truncated_normal_initializer(stddev=0.02))
+
+      output_bias = tf.get_variable(
+              "output_bias_", [num_labels], initializer=tf.zeros_initializer())
+
+      logits = tf.matmul(output_layer, output_weights, transpose_b=True)
+      logits = tf.nn.bias_add(logits, output_bias)
+      log_probs = tf.nn.log_softmax(logits, axis=-1)
+
+      # Convert labels into one-hot encoding
+      one_hot_labels = tf.one_hot(label_ids, depth=num_labels, dtype=tf.float32)
+
+      predicted_labels = tf.squeeze(tf.argmax(log_probs, axis=-1, output_type=tf.int32))
+
+      # If we're train/eval, compute loss between predicted and actual label
+      weights = tf.constant([[1.0, 3.0]])
+
+      per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs * weights, axis=-1)
+      loss = tf.reduce_mean(per_example_loss)  
 
     output_spec = None
     if mode == tf.estimator.ModeKeys.TRAIN:
 
       train_op = optimization.create_optimizer(
-          total_loss, learning_rate, num_train_steps, num_warmup_steps, use_tpu)
+          loss, learning_rate, num_train_steps, num_warmup_steps, use_tpu)
 
       output_spec = tf.contrib.tpu.TPUEstimatorSpec(
           mode=mode,
