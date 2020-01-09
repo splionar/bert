@@ -673,8 +673,8 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids, i
     log_probs = tf.nn.log_softmax(logits, axis=-1)
 
     one_hot_labels = tf.one_hot(labels, depth=num_labels, dtype=tf.float32)
-    weights = tf.constant([[1.0, 3.0]])
-    per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs * weights, axis=-1)
+    #weights = tf.constant([[1.0, 3.0]])
+    per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)
     loss = tf.reduce_mean(per_example_loss)
 
     return (loss, per_example_loss, logits, probabilities, output_layer)
@@ -752,9 +752,9 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
       predicted_labels = tf.squeeze(tf.argmax(log_probs, axis=-1, output_type=tf.int32))
 
       # If we're train/eval, compute loss between predicted and actual label
-      weights = tf.constant([[1.0, 3.0]])
+      #weights = tf.constant([[1.0, 3.0]])
 
-      per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs * weights, axis=-1)
+      per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)
       loss = tf.reduce_mean(per_example_loss)
 
     output_spec = None
