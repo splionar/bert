@@ -635,7 +635,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids, i
 
   image_features_extract_model = tf.keras.Model(new_input, hidden_layer)
   image = image_features_extract_model(image)
-
+  image = tf.reshape(image, (image.shape[0], -1, image.shape[3]))
 
   """Creates a classification model."""
   model = modeling.BertModel(
