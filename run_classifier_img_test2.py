@@ -577,7 +577,10 @@ def file_based_input_fn_builder(input_file, seq_length, is_training,
       if t.dtype == tf.int64:
         t = tf.to_int32(t)
       if t.dtype == tf.string:
-        t = tf.io.read_file(t)
+        try:
+          t = tf.io.read_file(t)
+        except:
+          t = tf.io.read_file("/content/drive/My Drive/deeplearning-eth/glue/vcr1images-299x299/lsmdc_0014_Ist_das_Leben_nicht_schoen/0014_Ist_das_Leben_nicht_schoen_01.14.39.611-01.14.40.870@0.jpg")
         t = tf.image.decode_jpeg(t,channels=3)
         t = tf.image.resize(t, (299, 299))
         t = tf.keras.applications.inception_v3.preprocess_input(t)
