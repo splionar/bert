@@ -21,7 +21,7 @@ from __future__ import print_function
 import collections
 import csv
 import os
-import modeling_test as modeling
+import modeling_test2 as modeling
 import optimization
 import tokenization
 import tensorflow as tf
