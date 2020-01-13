@@ -631,7 +631,7 @@ def file_based_input_fn_builder(input_file, seq_length, is_training,
       if t.dtype == tf.int64:
         t = tf.to_int32(t)
       if t.dtype == tf.string:
-        t = tf.decode_raw(t, tf.uint16)
+        t = tf.decode_raw(t, tf.int32)
         feature_shape = tf.stack([20, 5])
         t = tf.reshape(t, feature_shape)
 
