@@ -535,7 +535,7 @@ def convert_single_example(ex_index, example, label_list, max_seq_length,
   image_path = image_base_dir + '/'+ example.image_path
 
   image_read = skimage.io.imread(image_path)
-  results = model.detect([image_read], verbose=1)
+  results = model.detect([image_read], verbose=None)
   r = results[0]
   id = np.array([r['class_ids']])
   num_objects = len(r['class_ids'])
@@ -631,7 +631,7 @@ def file_based_input_fn_builder(input_file, seq_length, is_training,
       if t.dtype == tf.int64:
         t = tf.to_int32(t)
       if t.dtype == tf.string:
-        t = tf.decode_raw(t, tf.uint32)
+        t = tf.decode_raw(t, tf.uint16)
         feature_shape = tf.stack([20, 5])
         t = tf.reshape(t, feature_shape)
 
