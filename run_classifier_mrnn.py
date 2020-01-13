@@ -167,7 +167,7 @@ class InferenceConfig(coco.CocoConfig):
     # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
-    DETECTION_MAX_INSTANCES = 15
+    DETECTION_MAX_INSTANCES = 20
 
 config = InferenceConfig()
 model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
@@ -540,7 +540,7 @@ def convert_single_example(ex_index, example, label_list, max_seq_length,
   id = np.array([r['class_ids']])
   num_objects = len(r['class_ids'])
   img_feature = np.concatenate((r['rois'], id.T), axis=1)
-  img_feature = np.pad(img_feature, ((0, 15 - num_objects), (0, 0)), 'constant', constant_values=(0, 0))
+  img_feature = np.pad(img_feature, ((0, 20 - num_objects), (0, 0)), 'constant', constant_values=(0, 0))
   image = img_feature.tostring()
 
   label_id = label_map[example.label]
