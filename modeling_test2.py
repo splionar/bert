@@ -902,7 +902,7 @@ def transformer_model(input_tensor,
               hidden_size,
               kernel_initializer=create_initializer(initializer_range))
           it_attention_output = dropout(it_attention_output, hidden_dropout_prob)
-          it_attention_output = layer_norm(0.5 * it_attention_output + 1.5 * attention_output)
+          it_attention_output = layer_norm(it_attention_output + attention_output)
 
 
       # The activation is only applied to the "intermediate" hidden layer.
