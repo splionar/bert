@@ -756,9 +756,10 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
         bert_config, is_training, input_ids, input_mask, segment_ids, image, label_ids,
         num_labels, use_one_hot_embeddings)
 
+    tvars = tf.trainable_variables()
+    initialized_variable_names = {}
+    scaffold_fn = None
     if init_checkpoint:
-      tvars = tf.trainable_variables()
-      initialized_variable_names = {}
       (assignment_map, initialized_variable_names
       ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
       if use_tpu:
@@ -771,32 +772,13 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
       else:
         tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
 
-      tf.logging.info("**** Trainable Variables ****")
-      for var in tvars:
-        init_string = ""
-        if var.name in initialized_variable_names:
-          init_string = ", *INIT_FROM_CKPT*"
-        tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
+    tf.logging.info("**** Trainable Variables ****")
+    for var in tvars:
+      init_string = ""
+      if var.name in initialized_variable_names:
+        init_string = ", *INIT_FROM_CKPT*"
+      tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
                       init_string)
-
-      hidden_size = output_layer.shape[-1].value
-      output_weights = tf.get_variable(
-              "output_weights_", [num_labels, hidden_size],
-              initializer=tf.truncated_normal_initializer(stddev=0.02))
-
-      output_bias = tf.get_variable(
-              "output_bias_", [num_labels], initializer=tf.zeros_initializer())
-
-      logits = tf.matmul(output_layer, output_weights, transpose_b=True)
-      logits = tf.nn.bias_add(logits, output_bias)
-      probabilities = tf.nn.softmax(logits, axis=-1)
-      log_probs = tf.nn.log_softmax(logits, axis=-1)
-
-      # Convert labels into one-hot encoding
-      one_hot_labels = tf.one_hot(label_ids, depth=num_labels, dtype=tf.float32)
-      weights = tf.constant([[1.0, 3.0]])
-      per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs * weights, axis=-1)
-      loss = tf.reduce_mean(per_example_loss)
 
     output_spec = None
 
