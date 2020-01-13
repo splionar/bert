@@ -885,7 +885,7 @@ def transformer_model(input_tensor,
 	          do_return_2d_tensor=True,
 	          batch_size=batch_size,
 	          from_seq_length=seq_length,
-	          to_seq_length=None)
+	          to_seq_length=1)
         it_attention_heads.append(it_attention_head)
 
         it_attention_output = None
