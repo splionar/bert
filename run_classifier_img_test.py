@@ -1,29 +1,3 @@
-Skip to content
-Search or jump to…
-
-Pull requests
-Issues
-Marketplace
-Explore
- 
-@splionar 
-splionar
-/
-bert
-forked from google-research/bert
-0
-05.8k
- Code Pull requests 0 Actions Projects 0 Wiki Security Insights Settings
-bert/run_classifier_img_test2.py / 
-@splionar splionar Update run_classifier_img_test2.py
-44c81ea 11 days ago
-1073 lines (873 sloc)  37.4 KB
- 
-Code navigation is available!
-Navigate your code with ease. Click on function and method calls to jump to their definitions or references in the same repository. Learn more
-
-You're using code navigation to jump to definitions or references.
-Learn more or give us feedback
 # coding=utf-8
 # Copyright 2018 The Google AI Language Team Authors.
 #
@@ -162,6 +136,7 @@ class InputExample(object):
 
   def __init__(self, guid, text_a, text_b=None, image_path = None, label=None):
     """Constructs a InputExample.
+
     Args:
       guid: Unique id for the example.
       text_a: string. The untokenized text of the first sequence. For single
@@ -180,10 +155,12 @@ class InputExample(object):
 
 class PaddingInputExample(object):
   """Fake example so the num input examples is a multiple of the batch size.
+
   When running eval/predict on the TPU, we need to pad the number of examples
   to be a multiple of the batch size, because the TPU requires a fixed batch
   size. The alternative is to drop the last batch, which is bad because it means
   the entire output data won't be generated.
+
   We use this class instead of `None` because treating `None` as padding
   battches could cause silent errors.
   """
@@ -1076,15 +1053,3 @@ if __name__ == "__main__":
   flags.mark_flag_as_required("bert_config_file")
   flags.mark_flag_as_required("output_dir")
   tf.app.run()
-© 2020 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Help
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
