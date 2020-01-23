@@ -1,3 +1,29 @@
+Skip to content
+Search or jump to…
+
+Pull requests
+Issues
+Marketplace
+Explore
+ 
+@splionar 
+splionar
+/
+bert
+forked from google-research/bert
+0
+05.8k
+ Code Pull requests 0 Actions Projects 0 Wiki Security Insights Settings
+bert/run_classifier_img_test2.py / 
+@splionar splionar Update run_classifier_img_test2.py
+44c81ea 11 days ago
+1073 lines (873 sloc)  37.4 KB
+ 
+Code navigation is available!
+Navigate your code with ease. Click on function and method calls to jump to their definitions or references in the same repository. Learn more
+
+You're using code navigation to jump to definitions or references.
+Learn more or give us feedback
 # coding=utf-8
 # Copyright 2018 The Google AI Language Team Authors.
 #
@@ -136,7 +162,6 @@ class InputExample(object):
 
   def __init__(self, guid, text_a, text_b=None, image_path = None, label=None):
     """Constructs a InputExample.
-
     Args:
       guid: Unique id for the example.
       text_a: string. The untokenized text of the first sequence. For single
@@ -155,12 +180,10 @@ class InputExample(object):
 
 class PaddingInputExample(object):
   """Fake example so the num input examples is a multiple of the batch size.
-
   When running eval/predict on the TPU, we need to pad the number of examples
   to be a multiple of the batch size, because the TPU requires a fixed batch
   size. The alternative is to drop the last batch, which is bad because it means
   the entire output data won't be generated.
-
   We use this class instead of `None` because treating `None` as padding
   battches could cause silent errors.
   """
@@ -479,13 +502,13 @@ def convert_single_example(ex_index, example, label_list, max_seq_length,
       image_base_dir = image_base_dir[:-1]
   image_path = image_base_dir + '/'+ example.image_path
   #img = load_image(image_path)
-  try:
-    img = mpimg.imread(image_path)
-  except FileNotFoundError:
-    img = mpimg.imread(image_base_dir+'/lsmdc_0014_Ist_das_Leben_nicht_schoen/0014_Ist_das_Leben_nicht_schoen_01.14.39.611-01.14.40.870@0.jpg')
+  #try:
+  #  img = mpimg.imread(image_path)
+  #except FileNotFoundError:
+  #  img = mpimg.imread(image_base_dir+'/lsmdc_0014_Ist_das_Leben_nicht_schoen/0014_Ist_das_Leben_nicht_schoen_01.14.39.611-01.14.40.870@0.jpg')
   #img = img.flatten()/256
-  image = img.tostring()
-  #image = img.tolist()
+  #image = img.tostring()
+  image = image_path.encode()
   #im = image[:10]
 
   label_id = label_map[example.label]
@@ -577,9 +600,8 @@ def file_based_input_fn_builder(input_file, seq_length, is_training,
       if t.dtype == tf.int64:
         t = tf.to_int32(t)
       if t.dtype == tf.string:
-        t = tf.decode_raw(t, tf.uint8)
-        t = tf.dtypes.cast(t, dtype=tf.float32)
-        t = tf.reshape(t, [299,299,3])
+        t = tf.io.read_file(t)
+        t = tf.image.decode_jpeg(t,channels=3)
         t = tf.image.resize(t, (299, 299))
         t = tf.keras.applications.inception_v3.preprocess_input(t)
 
@@ -634,7 +656,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids, i
 
   image_features_extract_model = tf.keras.Model(new_input, hidden_layer)
   image = image_features_extract_model(image)
-
+  image = tf.reshape(image, (-1, 64, 2048))
 
   """Creates a classification model."""
   model = modeling.BertModel(
@@ -677,7 +699,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids, i
     per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs * weights, axis=-1)
     loss = tf.reduce_mean(per_example_loss)
 
-    return (loss, per_example_loss, logits, probabilities)
+    return (loss, per_example_loss, logits, probabilities, output_layer)
 
 
 def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
@@ -704,8 +726,9 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
       is_real_example = tf.ones(tf.shape(label_ids), dtype=tf.float32)
 
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
+    scaffold_fn = None
 
-    (total_loss, per_example_loss, logits, probabilities) = create_model(
+    (loss, per_example_loss, logits, probabilities, output_layer) = create_model(
         bert_config, is_training, input_ids, input_mask, segment_ids, image, label_ids,
         num_labels, use_one_hot_embeddings)
 
@@ -734,14 +757,15 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
                       init_string)
 
     output_spec = None
+
     if mode == tf.estimator.ModeKeys.TRAIN:
 
       train_op = optimization.create_optimizer(
-          total_loss, learning_rate, num_train_steps, num_warmup_steps, use_tpu)
+          loss, learning_rate, num_train_steps, num_warmup_steps, use_tpu)
 
       output_spec = tf.contrib.tpu.TPUEstimatorSpec(
           mode=mode,
-          loss=total_loss,
+          loss=loss,
           train_op=train_op,
           scaffold_fn=scaffold_fn)
     elif mode == tf.estimator.ModeKeys.EVAL:
@@ -760,7 +784,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
                       [per_example_loss, label_ids, logits, is_real_example])
       output_spec = tf.contrib.tpu.TPUEstimatorSpec(
           mode=mode,
-          loss=total_loss,
+          loss=loss,
           eval_metrics=eval_metrics,
           scaffold_fn=scaffold_fn)
     else:
@@ -1052,3 +1076,15 @@ if __name__ == "__main__":
   flags.mark_flag_as_required("bert_config_file")
   flags.mark_flag_as_required("output_dir")
   tf.app.run()
+© 2020 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Help
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
